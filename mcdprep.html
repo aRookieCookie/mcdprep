@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>McdPrep</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --border: #e4e4e0;
+    --text: #1a1a1a;
+    --muted: #888884;
+    --done: #c0bfbb;
+    --accent: #1a1a1a;
+    --radius: 6px;
+    --mono: 'Courier New', monospace;
+  }
+
+  body {
+    font-family: var(--mono);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+  }
+
+  h1 {
+    font-size: 14px;
+    font-weight: normal;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .toolbar button {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 3px 8px;
+    cursor: pointer;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: border-color 0.1s, color 0.1s;
+  }
+
+  .toolbar button:hover { border-color: var(--text); color: var(--text); }
+
+  .saved {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    min-width: 80px;
+    text-align: right;
+  }
+
+  /* Sections */
+  .section {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 6px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .section-head:hover { background: var(--bg); }
+
+  .section-name {
+    flex: 1;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .section-prog {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .arrow {
+    font-size: 10px;
+    color: var(--muted);
+    transition: transform 0.15s;
+  }
+
+  .section.open .arrow { transform: rotate(90deg); }
+
+  .section-body { display: none; border-top: 1px solid var(--border); }
+  .section.open .section-body { display: block; }
+
+  /* Rows */
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px 6px 28px;
+    transition: background 0.1s;
+  }
+
+  .row:hover { background: var(--bg); }
+
+  .row input[type=checkbox] {
+    width: 13px;
+    height: 13px;
+    cursor: pointer;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .row label {
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text);
+    transition: color 0.15s;
+  }
+
+  .row.done label {
+    color: var(--done);
+    text-decoration: line-through;
+    text-decoration-color: var(--done);
+  }
+
+  /* Divider between sections and standalones */
+  .divider {
+    margin: 1rem 0 0.5rem;
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Standalone items */
+  .standalone {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    transition: background 0.1s;
+  }
+
+  .standalone:hover { background: var(--surface); }
+
+  .standalone input[type=checkbox] {
+    width: 13px;
+    height: 13px;
+    cursor: pointer;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .standalone label {
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text);
+    transition: color 0.15s;
+  }
+
+  .standalone.done label {
+    color: var(--done);
+    text-decoration: line-through;
+    text-decoration-color: var(--done);
+  }
+
+  .standalone-head {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    padding: 4px 10px 2px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>McdPrep</h1>
+    <div class="toolbar">
+      <button onclick="saveAll()">Opslaan</button>
+      <button onclick="clearAll()">Wissen</button>
+    </div>
+    <span class="saved" id="saved-time"></span>
+  </header>
+
+  <div id="sections-container"></div>
+
+  <hr class="divider">
+  <div class="standalone-head">Overig</div>
+  <div id="standalone-container"></div>
+
+</div>
+
+<script>
+const sections = [
+  { id:'wraps',     label:'Wraps',              items:['Stickers','Temper Koeling','Tempering','Sopjes','Dresstafel','Grill Uien','Wraps','Brood'] },
+  { id:'rechter',   label:'Rechter Temper Koel',items:['Ijsbergsla','Bataviasla','Verse Ui','Rode Ui','Rucola','Tomaat','Komkommer','Cherry Tomaten','Grill Uien','Grill Bunkers'] },
+  { id:'temper',    label:'Temper Koeling',      items:['Ijsbergsla','Bataviasla','Verse Ui','Tomaat','Cheddar','Witte Cheddar'] },
+  { id:'tempering', label:'Tempering',           items:['Bacon','Tomaat','Augurk','Cheddar','Witte Cheddar'] },
+  { id:'sauzen',    label:'Sauzen',              items:['Chili','Tubes','Bottles'] },
+  { id:'lijn',      label:'Lijn 1/2/3/4',        items:['Toaster/Lijn/Stomer actief','Ingrediënten','Doosjes/Wikkels','3de UHC (Indien Nodig)'] },
+  { id:'vriezers',  label:'Vriezers',            items:['Grill','Frieteuse','Friet'] },
+];
+
+const standalones = [
+  { id:'st_brood_wraps', label:'Brood/Wraps/Glutenvrij' },
+  { id:'st_brood_onder', label:'Brood onder lijnen' },
+  { id:'st_doosjes',     label:'Doosjes/Wikkels' },
+];
+
+const COOKIE = 'mcdprep_v2';
+let state = {};
+
+function loadCookie() {
+  try {
+    const c = document.cookie.split(';').find(x => x.trim().startsWith(COOKIE + '='));
+    if (c) state = JSON.parse(decodeURIComponent(c.trim().slice(COOKIE.length + 1)));
+  } catch(e) { state = {}; }
+}
+
+function writeCookie() {
+  const exp = new Date(Date.now() + 30 * 86400000).toUTCString();
+  document.cookie = COOKIE + '=' + encodeURIComponent(JSON.stringify(state)) + ';expires=' + exp + ';path=/';
+}
+
+function saveAll() {
+  writeCookie();
+  const d = new Date();
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  document.getElementById('saved-time').textContent = hh + ':' + mm;
+}
+
+function clearAll() {
+  state = {};
+  writeCookie();
+  document.getElementById('saved-time').textContent = 'gewist';
+  render();
+}
+
+function getProgress(sec) {
+  const done = sec.items.filter((_, i) => state[sec.id + '_' + i]).length;
+  return done + '/' + sec.items.length;
+}
+
+function toggleSection(id) {
+  document.getElementById('sec_' + id).classList.toggle('open');
+}
+
+function toggleCheck(key, el) {
+  state[key] = el.checked;
+  const row = el.closest('.row, .standalone');
+  if (el.checked) row.classList.add('done'); else row.classList.remove('done');
+  // update progress if section item
+  const parts = key.split('_');
+  if (parts.length >= 2) {
+    const secId = parts.slice(0, -1).join('_');
+    const sec = sections.find(s => s.id === secId);
+    if (sec) {
+      const progEl = document.getElementById('prog_' + secId);
+      if (progEl) progEl.textContent = getProgress(sec);
+    }
+  }
+}
+
+function render() {
+  const cont = document.getElementById('sections-container');
+  cont.innerHTML = sections.map(sec => {
+    const items = sec.items.map((item, i) => {
+      const key = sec.id + '_' + i;
+      const checked = state[key] ? 'checked' : '';
+      const done = state[key] ? ' done' : '';
+      return `<div class="row${done}">
+        <input type="checkbox" id="${key}" ${checked} onchange="toggleCheck('${key}',this)">
+        <label for="${key}">${item}</label>
+      </div>`;
+    }).join('');
+
+    return `<div class="section" id="sec_${sec.id}">
+      <div class="section-head" onclick="toggleSection('${sec.id}')">
+        <span class="section-name">${sec.label}</span>
+        <span class="section-prog" id="prog_${sec.id}">${getProgress(sec)}</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="section-body">${items}</div>
+    </div>`;
+  }).join('');
+
+  const scont = document.getElementById('standalone-container');
+  scont.innerHTML = standalones.map(item => {
+    const checked = state[item.id] ? 'checked' : '';
+    const done = state[item.id] ? ' done' : '';
+    return `<div class="standalone${done}">
+      <input type="checkbox" id="${item.id}" ${checked} onchange="toggleCheck('${item.id}',this)">
+      <label for="${item.id}">${item.label}</label>
+    </div>`;
+  }).join('');
+}
+
+loadCookie();
+render();
+</script>
+</body>
+</html>
