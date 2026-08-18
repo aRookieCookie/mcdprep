@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Sluit Checklist</title>
+<style>
+  :root{
+    --gold:#ffc72c;
+    --red:#da291c;
+    --dark:#2d2926;
+    --line:#ddd;
+  }
+  *{box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  body{
+    font-family: Arial, Helvetica, sans-serif;
+    margin:0;
+    padding:14px;
+    color:var(--dark);
+    background:#f4f4f4;
+  }
+  .toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    max-width:1100px;
+    margin:0 auto 12px auto;
+  }
+  .toolbar h1{
+    font-size:18px;
+    margin:0;
+  }
+  .toolbar .buttons button{
+    background:var(--red);
+    color:#fff;
+    border:none;
+    padding:8px 16px;
+    border-radius:6px;
+    font-size:14px;
+    cursor:pointer;
+    margin-left:8px;
+  }
+  .toolbar .buttons button.secondary{
+    background:#555;
+  }
+  .toolbar .buttons button:hover{
+    opacity:0.9;
+  }
+
+  .sheet{
+    background:#fff;
+    max-width:1200px;
+    margin:0 auto;
+    padding:10px 14px;
+    border-radius:6px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.15);
+  }
+  .sheet-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    border-bottom:3px solid var(--gold);
+    padding-bottom:4px;
+    margin-bottom:6px;
+  }
+  .sheet-header h2{
+    margin:0;
+    font-size:16px;
+    color:var(--red);
+  }
+  .sheet-header .meta{
+    font-size:12px;
+    color:#555;
+  }
+  .sheet-header .meta input{
+    border:none;
+    border-bottom:1px solid #999;
+    font-size:12px;
+    width:110px;
+  }
+
+  .columns{
+    column-count:3;
+    column-gap:16px;
+  }
+  .section{
+    break-inside:avoid;
+    -webkit-column-break-inside:avoid;
+    margin-bottom:9px;
+    border:1px solid var(--line);
+    border-radius:5px;
+    padding:5px 7px;
+  }
+  .section h3{
+    margin:0 0 3px 0;
+    font-size:12.5px;
+    text-transform:uppercase;
+    letter-spacing:.2px;
+    color:#fff;
+    background:var(--dark);
+    padding:3px 6px;
+    border-radius:3px;
+  }
+  .section.controle h3{ background:var(--red); }
+  .section.voorbereiding h3{ background:#8a6d00; }
+
+  ul{
+    list-style:none;
+    margin:0;
+    padding:0;
+  }
+  li{
+    display:flex;
+    align-items:flex-start;
+    gap:5px;
+    font-size:11.5px;
+    line-height:1.3;
+    padding:1.5px 0;
+    border-bottom:1px dotted #eee;
+  }
+  li:last-child{ border-bottom:none; }
+  li input[type="checkbox"]{
+    margin-top:2px;
+    flex-shrink:0;
+    width:11px;
+    height:11px;
+    accent-color:var(--red);
+  }
+  li .txt{
+    outline:none;
+    flex:1;
+  }
+  li .txt:focus{
+    background:#fff8dd;
+  }
+  .del-btn{
+    border:none;
+    background:none;
+    color:#bbb;
+    cursor:pointer;
+    font-size:12px;
+    line-height:1;
+    padding:0 2px;
+    visibility:hidden;
+  }
+  li:hover .del-btn{ visibility:visible; }
+  .del-btn:hover{ color:var(--red); }
+
+  .add-row{
+    display:flex;
+    gap:4px;
+    margin-top:4px;
+  }
+  .add-row input{
+    flex:1;
+    font-size:11px;
+    padding:2px 4px;
+    border:1px solid var(--line);
+    border-radius:3px;
+  }
+  .add-row button{
+    font-size:11px;
+    border:1px solid var(--line);
+    background:#f0f0f0;
+    border-radius:3px;
+    cursor:pointer;
+    padding:2px 6px;
+  }
+  .add-row button:hover{ background:#e2e2e2; }
+
+  .wait-note{
+    font-size:10.5px;
+    font-style:italic;
+    background:#fff3cd;
+    border:1px dashed #d8a900;
+    padding:2px 5px;
+    border-radius:4px;
+  }
+
+  .hint{
+    max-width:1100px;
+    margin:10px auto 0 auto;
+    font-size:11.5px;
+    color:#666;
+  }
+
+  @media print{
+    body{ background:#fff; padding:0; }
+    .toolbar, .hint, .add-row, .del-btn{ display:none !important; }
+    .sheet{ box-shadow:none; border-radius:0; padding:0; max-width:none; }
+    .columns{ column-count:3; column-gap:14px; }
+    .section{ border-color:#bbb; }
+    @page{ size:A4 landscape; margin:6mm; }
+    li .txt:focus{ background:none; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <h1>McDonald's — Sluit Checklist</h1>
+    <div class="buttons">
+      <button class="secondary" onclick="resetChecks()">Vink alles uit</button>
+      <button onclick="window.print()">🖨️ Print</button>
+    </div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-header">
+      <h2>Sluit Checklist Manager</h2>
+    </div>
+
+    <div id="allColumns" class="columns"></div>
+  </div>
+
+  <p class="hint">
+    Tip: klik op een tekstregel om die aan te passen, of typ hieronder in een sectie een nieuwe taak en druk op "+".
+    Wil je dit blijvend aanpassen (ook na herladen)? Scroll in de HTML-broncode naar <code>CHECKLIST_DATA</code>
+    bovenaan het script en pas de lijst daar aan — dat is de enige plek die je hoeft te wijzigen.
+  </p>
+
+<script>
+/* ======================================================================
+   CHECKLIST_DATA — pas HIER je taken aan (secties + items).
+   - Voeg een item toe: extra string in de "items" array.
+   - Voeg een sectie toe: extra object { title: "...", items: [...] }.
+   - "group" bepaalt in welk blok de sectie print (main / after / controle / voorbereiding)
+   ====================================================================== */
+const CHECKLIST_DATA = [
+  { group:"main", title:"Start PC", items:[
+    "Log alle kassa's uit",
+    "Log alle Kiosken uit",
+    "SW Close",
+    "Start Control Centre (Check)",
+    "Check Kloktijden",
+    "SW Open",
+    "Start Control Centre (Start)"
+  ]},
+  { group:"main", title:"HACCP", items:[
+    "Meet de pannen",
+    "Markeer de benodigde pannen",
+    "Los alarmen op",
+    "Vul de avond HACCP in"
+  ]},
+  { group:"main", title:"Bank Storting", items:[
+    "Tel de 2 laatste kassa's",
+    "Verwerk ze in MyStore",
+    "Tel de bankstorting en vergelijk met MyStore",
+    "Vul het stortingsformulier in en print uit",
+    "Vul het wisselgeld in",
+    "Teken het stortingsformulier en scheur doormidden",
+    "Boek de bankstorting in MyStore",
+    "Krijg een getuige voor de storting en vul het formulier in",
+    "Wikkel het geld in het formulier en stop in het zakje",
+    "Pers alle lucht uit het zakje en stort het",
+    "Doe het wisselgeld in het grijze bakje",
+    "Start de tweede sluit in Control Centre"
+  ]},
+  { group:"main", title:"Dagmail", items:[
+    "Maak de Speakapp dagmail",
+    "Scan de dagkastaat in"
+  ]},
+
+  { group:"after", title:"Mailen naar 1119@mail", items:[
+    "Dagkastaat (MyStore versie)",
+    "Kloktijden rapport",
+    "Operations Rapport",
+    { note:"--- Wacht tot PC sluit klaar is ---" },
+    { sub:"Verstuur mail naar Ezla, Elton, Admin Kantoor (gebruik vorige mails + onderstaande):" },
+    "Ingescande dagkastaat",
+    "Labour rapport (auto verstuurd door MyStore na sluit)"
+  ]},
+  { group:"after", title:"Opruimen", items:[
+    "Niet alles aan elkaar voor de dagadmin map",
+    "Ruim kantoor op",
+    "Ruim delivery kar op",
+    "Doe kantoor op slot en zet het alarm erop"
+  ]},
+
+  { group:"controle", title:"Keuken", items:[
+    "Crewroom",
+    "Crew toilet",
+    "Stomer, lijn, toaster uit",
+    "Schermen uit",
+    "Vriezers uit (behalve friet)",
+    "UHC leeg",
+    "Delivery plaat uit",
+    "Genoeg brood in koeling",
+    "Tempering",
+    "Kaas in koeling"
+  ]},
+  { group:"controle", title:"Shake", items:[
+    "Machine / condimententafel schoon",
+    "Heat cycle",
+    "Prullenbakken"
+  ]},
+  { group:"controle", title:"McCafé", items:[
+    "Patisserie",
+    "BIC schoon",
+    "Machines uit"
+  ]},
+  { group:"controle", title:"Lobby", items:[
+    "Jerry cans",
+    "Onder tafels dweilen",
+    "Wc's",
+    "Vegen",
+    "Playroom / vergaderruimte"
+  ]},
+  { group:"controle", title:"Overig", items:[
+    "Deuren dicht",
+    "Raam 1",
+    "Dienbladen",
+    "Schermen"
+  ]},
+
+  { group:"voorbereiding", title:"Voorbereiding", items:[
+    "Pattycash tellen",
+    "Bankstorting formulieren klaar",
+    "Alarmen opgelost",
+    "Kantoor opgeruimd",
+    "Dagmail voorbereid"
+  ]}
+];
+/* ====================================================================== */
+
+const allColumns = document.getElementById("allColumns");
+
+function buildSection(section){
+  const wrap = document.createElement("div");
+  wrap.className = "section" + (section.group === "controle" ? " controle" : "") + (section.group === "voorbereiding" ? " voorbereiding" : "");
+
+  const h3 = document.createElement("h3");
+  h3.textContent = section.title;
+  wrap.appendChild(h3);
+
+  const ul = document.createElement("ul");
+  section.items.forEach(entry => {
+    if(typeof entry === "object" && entry !== null && entry.note){
+      const li = document.createElement("li");
+      li.className = "note-li";
+      li.style.border = "none";
+      const span = document.createElement("span");
+      span.className = "wait-note";
+      span.style.margin = "3px 0";
+      span.style.display = "block";
+      span.style.width = "100%";
+      span.textContent = entry.note;
+      li.appendChild(span);
+      ul.appendChild(li);
+    } else if(typeof entry === "object" && entry !== null && entry.sub){
+      const li = document.createElement("li");
+      li.className = "sub-li";
+      li.style.border = "none";
+      const span = document.createElement("span");
+      span.style.fontWeight = "bold";
+      span.style.fontSize = "11px";
+      span.style.display = "block";
+      span.style.width = "100%";
+      span.style.marginTop = "4px";
+      span.textContent = entry.sub;
+      li.appendChild(span);
+      ul.appendChild(li);
+    } else {
+      ul.appendChild(buildItem(entry));
+    }
+  });
+  wrap.appendChild(ul);
+
+  const addRow = document.createElement("div");
+  addRow.className = "add-row";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "nieuwe taak…";
+  const btn = document.createElement("button");
+  btn.textContent = "+";
+  btn.onclick = () => {
+    if(input.value.trim() !== ""){
+      ul.appendChild(buildItem(input.value.trim()));
+      input.value = "";
+    }
+  };
+  input.addEventListener("keydown", e => { if(e.key === "Enter") btn.onclick(); });
+  addRow.appendChild(input);
+  addRow.appendChild(btn);
+  wrap.appendChild(addRow);
+
+  return wrap;
+}
+
+function buildItem(text){
+  const li = document.createElement("li");
+
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.onchange = () => {
+    span.style.textDecoration = cb.checked ? "line-through" : "none";
+    span.style.color = cb.checked ? "#999" : "inherit";
+  };
+
+  const span = document.createElement("span");
+  span.className = "txt";
+  span.contentEditable = "true";
+  span.textContent = text;
+
+  const del = document.createElement("button");
+  del.className = "del-btn";
+  del.textContent = "✕";
+  del.title = "Verwijder";
+  del.onclick = () => li.remove();
+
+  li.appendChild(cb);
+  li.appendChild(span);
+  li.appendChild(del);
+  return li;
+}
+
+CHECKLIST_DATA.forEach(section => {
+  allColumns.appendChild(buildSection(section));
+});
+
+function resetChecks(){
+  document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.checked = false;
+    cb.dispatchEvent(new Event('change'));
+  });
+}
+</script>
+
+</body>
+</html>
